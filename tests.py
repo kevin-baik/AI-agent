@@ -1,4 +1,4 @@
-from functions.get_files_info import get_files_info, get_file_content
+from functions.get_files_info import get_files_info, get_file_content, write_file
 
 def tests():
     # get_files_info tests
@@ -16,6 +16,7 @@ def tests():
     """
     
     # get_file_content
+    """
     test_cases = [
         #("calculator", "lorem.txt"),
         ("calculator", "main.py"),
@@ -27,6 +28,18 @@ def tests():
     for test in test_cases:
         result = get_file_content(*test)
         print(result)
+    """
 
+    # write_file tests
+    test_cases = [
+        ("calculator", "lorem.txt", "wait, this isn't lorem ipsum"),
+        ("calculator", "pkg/morelorem.txt", "lorem ipsum dolor sit amet"),
+        ("calculator", "/tmp/temp.txt", "this should not be allowed")
+    ]
+
+    for test in test_cases:
+        result = write_file(*test)
+        print(result)
+    
 if __name__ == "__main__":
     tests()
