@@ -1,5 +1,6 @@
 import os
 import subprocess
+from google.genai import types
 
 def run_python_file(working_directory, file_path, args=[]):
     abs_working_dir = os.path.abspath(working_directory)
@@ -20,10 +21,10 @@ def run_python_file(working_directory, file_path, args=[]):
                                 text=True, 
                                 timeout=30)
         result = []
-	if completed_process.stdout:
-	    result.append(f"STDOUT:\n{completed_process.stdout}")
+        if completed_process.stdout:
+            result.append(f"STDOUT:\n{completed_process.stdout}")
         if completed_process.stderr:
-	    result.append(f"STDERR:\n{completed_process.stderr}")
+            result.append(f"STDERR:\n{completed_process.stderr}")
 
         if completed_process.returncode != 0:
             result.append(f"Process exited with code {completed_process.returncode}")
@@ -33,3 +34,24 @@ def run_python_file(working_directory, file_path, args=[]):
     except Exception as e:
         return f"Error: executing Python file: {e}"
 
+
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="If the file to run is a Python file, run a subprocess to execute the python file with the given and optional arguments and return its result.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path, relative to the working directory, to the python file to execute",
+            ),
+            "args": types.Schema(
+                type=types.Type.ARRAY,
+                items=types.Schema(
+                    type=types.Type.STRING,
+                ),
+                description="List of strings that are optional arguments to include in the python execution.",
+            ),
+        },
+    ),
+)
