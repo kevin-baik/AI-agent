@@ -43,8 +43,21 @@ def main():
     ]
         
     # GENERATE_CONTENT
-    generate_content(client, messages, flags)
-    
+    try:
+        max_iteration = 20
+        while max_iteration > 0:
+            response = generate_content(client, messages, flags)
+            if response:
+                print("Response:")
+                print(response)
+                break
+            max_iteration -= 1
+        if max_iteration == 0:
+            print("Max attempts reached")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+
 def generate_content(client, messages, flags):
     response = client.models.generate_content(
         model="gemini-2.0-flash-001",
@@ -58,15 +71,28 @@ def generate_content(client, messages, flags):
         print("Prompt tokens:", response.usage_metadata.prompt_token_count)
         print("Response tokens:", response.usage_metadata.candidates_token_count)
 
-    print("Response:")
     if not response.function_calls:
-        print(response.text)
+        return response.text
+
+    for candidate in response.candidates:
+        messages.append(candidate.content)
 
     func_calls = response.function_calls
     for func in func_calls:
         function_response = call_function(func)
+        response_content = types.Content(
+            role="user",
+            parts=[
+                types.Part.from_function_response(
+                    name=function_response.parts[0].function_response.name,
+                    response=function_response.parts[0].function_response.response
+                )
+            ]
+        )
+        messages.append(response_content)
+
         if not function_response.parts[0].function_response.response:
-            raise SystemError("fatal error: no function response")
+            raise Exception("fatal error: no function response")
         if Flags.VERBOSE in flags:
             print(f"-> {function_response.parts[0].function_response.response}")
 
