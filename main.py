@@ -6,7 +6,8 @@ from google import genai
 from google.genai import types
 
 from prompts import system_prompt
-from call_function import available_functions, call_function
+from call_function import call_function, available_functions
+from config import MAX_ITERATIONS
 
 class Flags(Enum):
     VERBOSE = 1
@@ -43,20 +44,23 @@ def main():
     ]
         
     # GENERATE_CONTENT
-    try:
-        max_iteration = 20
-        while max_iteration > 0:
-            response = generate_content(client, messages, flags)
-            if response:
-                print("Response:")
-                print(response)
+    curr_iteration = 0
+    while True:
+        curr_iteration += 1
+        if curr_iteration > MAX_ITERATIONS:
+            print(f"Max attempts ({MAX_ITERATIONS}) reached.")
+            sys.exit(1)
+        
+        try:
+            final_response = generate_content(client, messages, flags)
+            if final_response:
+                print("Final response:")
+                print(final_response)
                 break
             max_iteration -= 1
-        if max_iteration == 0:
-            print("Max attempts reached")
         
-    except Exception as e:
-        print(f"Error: {e}")
+        except Exception as e:
+            print(f"Error while executing generate_content: {e}")
 
 def generate_content(client, messages, flags):
     response = client.models.generate_content(
@@ -77,25 +81,23 @@ def generate_content(client, messages, flags):
     for candidate in response.candidates:
         messages.append(candidate.content)
 
-    func_calls = response.function_calls
-    for func in func_calls:
-        function_response = call_function(func)
-        response_content = types.Content(
-            role="user",
-            parts=[
-                types.Part.from_function_response(
-                    name=function_response.parts[0].function_response.name,
-                    response=function_response.parts[0].function_response.response
-                )
-            ]
-        )
-        messages.append(response_content)
-
-        if not function_response.parts[0].function_response.response:
-            raise Exception("fatal error: no function response")
+    function_call_responses = []
+    for function_call_part in response.function_calls:
+        function_call_result = call_function(function_call_part, Flags.VERBOSE in flags)
+        if (
+            not function_call_result.parts
+            or not function_call_result.parts[0].function_response
+        ):
+            raise Exception("empty function call result")
         if Flags.VERBOSE in flags:
             print(f"-> {function_response.parts[0].function_response.response}")
 
+        function_call_responses.append(function_call_result.parts[0])
+
+    if not function_call_responses:
+        raise Exception("Error during function call: no function responses.")
+        
+    messages.append(types.Content(role="user", parts=function_call_responses))
 
 if __name__ == "__main__":
     main()

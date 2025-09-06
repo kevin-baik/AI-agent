@@ -21,7 +21,7 @@ def get_file_content(working_directory, file_path):
             return file_content
 
     except Exception as e:
-        return f"\tError: {e}"
+        return f"\tError reading file at '{file_path}': {e}"
 
 schema_get_file_content = types.FunctionDeclaration(
     name="get_file_content",
@@ -34,5 +34,6 @@ schema_get_file_content = types.FunctionDeclaration(
                 description="The path, relative to the working directory, to the file to be open and read.",
             ),
         },
+        required=["file_path"],
     ),
 )

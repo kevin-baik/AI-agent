@@ -53,5 +53,6 @@ schema_run_python_file = types.FunctionDeclaration(
                 description="List of strings that are optional arguments to include in the python execution.",
             ),
         },
+        require=["file_path"],
     ),
 )

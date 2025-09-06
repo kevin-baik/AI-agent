@@ -2,26 +2,29 @@ import os
 from google.genai import types
 
 def get_files_info(working_directory, directory="."):
+    abs_working_dir = os.path.abspath(working_directory)
+    target_dir = os.path.join(abs_working_dir, directory)
+    abs_target_dir = os.path.abspath(target_dir)
+
+    if not abs_target_dir.startswith(abs_working_dir):
+       return f'\tError: Cannot list "{directory}" as it is outside the permitted working directory'
+
+    if not os.path.isdir(abs_target_dir):
+        return f'\tError: "{directory}" is not a directory'
     try:
-        abs_working_dir = os.path.abspath(working_directory)
-        target_dir = os.path.join(abs_working_dir, directory)
-        abs_target_dir = os.path.abspath(target_dir)
-
-        if not abs_target_dir.startswith(abs_working_dir):
-           return f'\tError: Cannot list "{directory}" as it is outside the permitted working directory'
-
-        if not os.path.isdir(abs_target_dir):
-            return f'\tError: "{directory}" is not a directory'
-
-        content_info = []
-        for content in os.listdir(abs_target_dir):
-            content_path = os.path.join(abs_target_dir, content)
-            content_info.append(f"- {content}: file_size={os.path.getsize(content_path)} bytes, is_dir={os.path.isdir(content_path)}")
-
-        return "\n".join(content_info)
+        files_info = []
+        for filename in os.listdir(abs_target_dir):
+            filepath = os.path.join(abs_target_dir, filename)
+            file_size = 0
+            is_dir = os.path.isdir(filepath)
+            file_size = os.path.getsize(filepath)
+            files_info.append(
+                f"- {filename}: file_size={file_size} bytes, is_dir={is_dir}"
+            )
+        return "\n".join(files_info)
 
     except Exception as e:
-        return f"\tError: {e}"
+        return f"\tError getting file info: {e}"
 
 
 schema_get_files_info = types.FunctionDeclaration(
