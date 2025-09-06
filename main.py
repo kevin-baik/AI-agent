@@ -6,7 +6,7 @@ from google import genai
 from google.genai import types
 
 from prompts import system_prompt
-from call_function import available_functions
+from call_function import available_functions, call_function
 
 class Flags(Enum):
     VERBOSE = 1
@@ -64,7 +64,12 @@ def generate_content(client, messages, flags):
 
     func_calls = response.function_calls
     for func in func_calls:
-        print(f"Calling function: {func.name}({func.args})")
-    
+        function_response = call_function(func)
+        if not function_response.parts[0].function_response.response:
+            raise SystemError("fatal error: no function response")
+        if Flags.VERBOSE in flags:
+            print(f"-> {function_response.parts[0].function_response.response}")
+
+
 if __name__ == "__main__":
     main()
